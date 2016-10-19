@@ -162,13 +162,11 @@ public class ServerService extends Service {
             DataReader test = new DataReader(sensor);
             Thread t = new Thread(test);
             t.start();
-            t.join();
-            float[] values;
-            // I'm so sorry.
-            // test
-            Thread.sleep(1000);
-            values = test.data;
             html = sensor.getName().toString();
+            synchronized (sensor){
+                sensor.wait();
+            }
+            float[] values = test.data;
             for(float val: values){
                 html += "<li>" + val + "</li>";
             }
@@ -194,8 +192,10 @@ public class ServerService extends Service {
         public void onSensorChanged(SensorEvent event) {
             data = event.values.clone();
             waiting = false;
+            synchronized (mySensor){
+                mySensor.notifyAll();
+            }
             sensorManager.unregisterListener(this);
-            Thread.currentThread().interrupt();
         }
 
         @Override
