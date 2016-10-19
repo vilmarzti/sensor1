@@ -8,10 +8,9 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Binder;
 import android.os.IBinder;
-import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
-import android.telephony.PhoneNumberUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,9 +19,7 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.regex.Pattern;
 
-import static whatever.sensorserver.R.id.porttext;
 
 /**
  * Created by martin on 19.10.16.
@@ -30,10 +27,10 @@ import static whatever.sensorserver.R.id.porttext;
 
 public class ServerService extends Service {
     private ServerSocket serverSocket;
+    private Thread serverThread;
     private List<Sensor> sensorList;
     private SensorManager sensorManager;
-    private float[] eventvalues;
-    Activity mainActivity;
+    private final LocalBinder lBinder = new LocalBinder();
 
     @Override
     public void onCreate() {
@@ -44,13 +41,23 @@ public class ServerService extends Service {
         }
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
-        new Thread(new ServerThread()).start();
+        serverThread = new Thread(new ServerThread());
+        serverThread.start();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return lBinder;
+    }
+
+    public void startServer(){
+        serverThread = new Thread(new ServerThread());
+        serverThread.start();
+    }
+
+    public void stopServer(){
+        serverThread.interrupt();
     }
 
     class ServerThread implements Runnable {
@@ -70,6 +77,11 @@ public class ServerService extends Service {
         }
     }
 
+    public class LocalBinder extends Binder{
+       ServerService getService(){
+           return ServerService.this;
+       }
+    }
 
     class CommThread implements Runnable{
         private Socket clientSocket;
@@ -100,18 +112,24 @@ public class ServerService extends Service {
                         line = this.input.readLine();
                     }
 
-                    byte[] out = new byte[0];
-                    try {
-                        out = getOutputBytes(route);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
                     output = new PrintStream(this.clientSocket.getOutputStream());
-                    output.println("HTTP/1.0 200 OK");
-                    output.println("Content-Type: text/html");
-                    output.println("Content-Length: " + out.length);
-                    output.println();
-                    output.write(out);
+                    if(route == null){
+                            output.println("HTTP/1.0 500 ERROR");
+                    }
+                    else{
+                        byte[] out = new byte[]{1};
+                        try {
+                            out = getOutputBytes(route);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        output.println("HTTP/1.0 200 OK");
+                        output.println("Content-Type: text/html");
+                        output.println("Content-Length: " + out.length);
+                        output.println();
+                        output.write(out);
+                    }
+
                     output.flush();
 
                 } catch (IOException e) {
@@ -135,11 +153,11 @@ public class ServerService extends Service {
             if (route.equals("")) {
                 return getHTMLlist().getBytes();
             }
-            else if(route.matches("\\d*\\.?\\d+") && Integer.parseInt(route) <= sensorList.size()){
+            else if(route.matches("\\d*\\.?\\d+") && Integer.parseInt(route) < sensorList.size()){
                 return getSensorValue(Integer.parseInt(route)).getBytes();
             }
             else{
-                return "Fuck".getBytes();
+                return "Nothing to see here".getBytes();
             }
         }
 
@@ -159,30 +177,27 @@ public class ServerService extends Service {
         private String getSensorValue(Integer position) throws InterruptedException {
             String html;
             Sensor sensor = sensorList.get(position);
-            DataReader test = new DataReader(sensor);
-            Thread t = new Thread(test);
-            t.start();
             html = sensor.getName().toString();
+            DataReader readData = new DataReader(sensor);
+            (new Thread(readData)).start();
             synchronized (sensor){
                 sensor.wait();
             }
-            float[] values = test.data;
+            float[] values = readData.data;
             for(float val: values){
                 html += "<li>" + val + "</li>";
             }
+            html += "<a href=\"../\"> back </a>";
             return html;
         }
 
     }
 
+
     class DataReader implements Runnable, SensorEventListener{
         public float[] data;
         boolean waiting = true;
         Sensor mySensor;
-
-        public float[] returnData(){
-            return data;
-        }
 
         public DataReader(Sensor sensor){
             mySensor = sensor;
@@ -208,5 +223,4 @@ public class ServerService extends Service {
             sensorManager.registerListener(this, mySensor, sensorManager.SENSOR_DELAY_FASTEST);
         }
     }
-
 }

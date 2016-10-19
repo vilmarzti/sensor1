@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">sensorserver</string>
+    <string name="turn_off">Shut off</string>
+    <string name="turn_on">turn on</string>
 </resources>
