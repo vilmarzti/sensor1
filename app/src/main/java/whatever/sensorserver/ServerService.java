@@ -165,6 +165,7 @@ public class ServerService extends Service {
             t.join();
             float[] values;
             // I'm so sorry.
+            // test
             Thread.sleep(1000);
             values = test.data;
             html = sensor.getName().toString();
