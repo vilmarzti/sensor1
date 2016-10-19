@@ -1,7 +1,5 @@
 package whatever.sensorserver;
 
-import android.app.Activity;
-import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -30,6 +28,7 @@ public class ServerService extends Service {
     private Thread serverThread;
     private List<Sensor> sensorList;
     private SensorManager sensorManager;
+    private boolean isRunning = true;
     private final LocalBinder lBinder = new LocalBinder();
 
     @Override
@@ -52,23 +51,36 @@ public class ServerService extends Service {
     }
 
     public void startServer(){
+        isRunning = true;
+        try {
+            serverSocket = new ServerSocket(MainActivity.portNum);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         serverThread = new Thread(new ServerThread());
         serverThread.start();
     }
 
     public void stopServer(){
+        isRunning = false;
         serverThread.interrupt();
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     class ServerThread implements Runnable {
-        public void run() {
 
+        public void run() {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket socket = serverSocket.accept();
 
                     CommThread commt = new CommThread(socket);
-                    new Thread(commt).start();
+                    Thread t = new Thread(commt);
+                    t.start();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
