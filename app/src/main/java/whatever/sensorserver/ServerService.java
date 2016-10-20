@@ -232,7 +232,7 @@ public class ServerService extends Service {
 
         @Override
         public void run() {
-            sensorManager.registerListener(this, mySensor, sensorManager.SENSOR_DELAY_FASTEST);
+            sensorManager.registerListener(this, mySensor, sensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 }

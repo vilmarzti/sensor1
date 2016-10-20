@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,10 +14,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -36,9 +40,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         iptext = (TextView) findViewById(R.id.iptext);
+
         porttext = (TextView) findViewById(R.id.porttext);
+        porttext.setText("PORT: " + portNum.toString());
+
         button = (Button) findViewById(R.id.service_button);
         button.setText(R.string.turn_off);
+        button.setOnClickListener(this);
 
 
         try {
@@ -50,18 +58,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         while (interfaces != null && interfaces.hasMoreElements()) {
             wlan = interfaces.nextElement();
             if (wlan.getName().equals("wlan0")) {
-                InterfaceAddress adress = wlan.getInterfaceAddresses().get(wlan.getInterfaceAddresses().size() - 1);
-                if (adress != null) {
-                    iptext.setText("IP adress:" + adress.getAddress().toString());
+                List<InterfaceAddress> adresses = wlan.getInterfaceAddresses();
+                if(adresses.size() !=0){
+                    for(InterfaceAddress adress: adresses){
+                        if(adress != null &&
+                                !adress.getAddress().isLoopbackAddress() &&
+                                adress.getAddress().getClass() == Inet4Address.class){
+                            iptext.setText("IP adress:" + adress.getAddress().toString());
+                        }
+                        int x = 1;
+                    }
                 }
             }
         }
-        button.setOnClickListener(this);
-        porttext.setText("PORT: " + portNum.toString());
+
+
         Intent intent = new Intent(this, ServerService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-
-        //startService(new Intent(this, ServerService.class));
     }
 
     @Override
