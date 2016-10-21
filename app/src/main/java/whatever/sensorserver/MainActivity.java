@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.media.MediaPlayer;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -19,12 +20,14 @@ import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URI;
 import java.util.Enumeration;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
     static public Integer portNum = 9087;
+    static public MediaPlayer mediaPlayer;
 
     private TextView iptext;
     private TextView porttext;
@@ -39,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mediaPlayer = MediaPlayer.create(this, R.raw.sound);
         iptext = (TextView) findViewById(R.id.iptext);
 
         porttext = (TextView) findViewById(R.id.porttext);

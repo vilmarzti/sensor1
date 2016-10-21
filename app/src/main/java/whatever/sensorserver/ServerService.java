@@ -2,12 +2,16 @@ package whatever.sensorserver;
 
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.Vibrator;
+import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 
 import java.io.BufferedReader;
@@ -168,9 +172,28 @@ public class ServerService extends Service {
             else if(route.matches("\\d*\\.?\\d+") && Integer.parseInt(route) < sensorList.size()){
                 return getSensorValue(Integer.parseInt(route)).getBytes();
             }
-            else{
-                return "Nothing to see here".getBytes();
+            else if(route.equals("vibrator")){
+                vibrate();
+               return "vibrating".getBytes();
             }
+            else if(route.equals("flashlight")){
+                take_photo();
+                return "flashing".getBytes();
+            }
+            else{
+                    return "Nothing to see here".getBytes();
+            }
+
+        }
+
+        private void take_photo(){
+            MediaPlayer mp = MainActivity.mediaPlayer;
+            mp.setVolume(1.0f, 1.0f);
+            mp.start();
+        }
+        private void vibrate(){
+            Vibrator vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+            vib.vibrate(5000);
         }
 
         private String getHTMLlist(){
@@ -182,6 +205,9 @@ public class ServerService extends Service {
                 html += "<li><a  href=\"./" + x.toString() + "\">" + sensor.getName() + "</a></li>";
                 x += 1;
             }
+            html += "<p>";
+            html += "<li><a href=\"./vibrator\"> vibrate </a></li>";
+            html += "<li><a href=\"./flashlight\"> flashlight </a></li>";
             html += htmlEnd;
            return html;
         }
