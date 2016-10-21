@@ -178,7 +178,7 @@ public class ServerService extends Service {
             }
             else if(route.equals("flashlight")){
                 take_photo();
-                return "flashing".getBytes();
+                return "sound!".getBytes();
             }
             else{
                     return "Nothing to see here".getBytes();
