@@ -193,9 +193,12 @@ public class ServerService extends Service {
             DataReader readData = new DataReader(sensor);
             (new Thread(readData)).start();
             synchronized (sensor){
-                sensor.wait();
+                sensor.wait(500);
             }
             float[] values = readData.data;
+            if(values == null){
+                values =new float[]{0};
+            }
             for(float val: values){
                 html += "<li>" + val + "</li>";
             }
